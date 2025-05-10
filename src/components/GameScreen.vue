@@ -40,13 +40,10 @@
 </template>
 
 <script>
-import SceneManager from './SceneManager';
-
 export default {
-  props: ['sceneId', 'theme'],
+  props: ['sceneId', 'theme', 'manager', 'typingSpeed'], // <-- 新增 typingSpeed prop
   data() {
     return {
-      manager: new SceneManager(),
       currentActionIndex: 0,
       currentActions: [],
       currentAction: null,
@@ -58,10 +55,18 @@ export default {
   watch: {
     sceneId(newId) {
       this.loadScene(newId);
-    }
+    },
   },
   mounted() {
-    this.loadScene(this.sceneId);
+    // 确保 manager 已经通过 props 传入
+    if (this.manager) {
+      this.loadScene(this.sceneId);
+    } else {
+      console.error("GameScreen: SceneManager prop is missing or null.");
+      // 显示错误信息给用户
+      this.messages.push({ content: "游戏加载失败，请返回开始界面并确保数据已选择。", type: 'text' });
+      this.currentAction = { type: 'ending', name: '加载错误', description: '无法初始化游戏场景管理器。' };
+    }
   },
   methods: {
     loadScene(sceneId) {
@@ -84,7 +89,6 @@ export default {
         this.typingText = '';
         this.isTyping = true;
         this.typeOut(action.content, () => {
-          this.messages.push({ content: action.content, type: 'text' });
           this.isTyping = false;
           this.scrollToBottom();
           this.currentActionIndex++;
@@ -101,23 +105,36 @@ export default {
     },
     typeOut(text, done) {
       let i = 0;
-      const speed = 30;
       const interval = setInterval(() => {
         if (i < text.length) {
-          this.typingText += text[i];
+          if (text[i] === '\n') {
+            this.messages.push({ content: this.typingText, type: 'text' });
+            this.typingText = '';
+            this.scrollToBottom();
+          } else {
+            this.typingText += text[i];
+          }
           i++;
         } else {
+          this.messages.push({ content: this.typingText, type: 'text' });
+            this.typingText = '';
+            this.scrollToBottom();
           clearInterval(interval);
-          this.typingText = ''; 
           done();
         }
-      }, speed);
+      }, this.typingSpeed); // <-- 使用 this.typingSpeed prop
     },
     handleOption(opt) {
       this.messages.push({ content: `→ 你选择了：${opt.text}`, type: 'choice' });
       this.scrollToBottom();
-      const next = this.manager.applyEffects(opt.effects);
-      this.loadScene(next);
+
+        const next = this.manager.applyEffects(opt.effects);
+        if (next) {
+          this.loadScene(next);
+        }else{
+          this.currentActionIndex++;
+          this.nextAction();
+        }
     },
     scrollToBottom() {
       this.$nextTick(() => {
@@ -138,7 +155,7 @@ export default {
   max-width: 600px;
   margin: 20px auto;
   padding: 48px 24px;
-  background: #ffffff;
+  /* background: #ffffff; */
   border-radius: 24px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
   text-align: center;
@@ -157,11 +174,13 @@ export default {
 }
 
 .message {
-  padding: 12px 16px;
+  padding: 8px 16px;
   border-radius: 12px;
   font-size: 16px;
   transition: background 0.3s ease;
   word-break: break-word;
+  text-align: left;
+  line-height: 1.7;
 }
 
 .message-text {
