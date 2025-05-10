@@ -1,0 +1,35 @@
+//effect 中的 actionType（选项执行的效果类型）
+{
+  "actionType": "jump",      // 跳转到指定场景
+  "targetScene": "scene2"
+},
+{
+  "actionType": "update",    // 更新玩家状态
+  "property": "wetness",
+  "value": "soaked"
+},
+{
+  "actionType": "condition", // 条件跳转
+  "test": "has_raincoat",
+  "trueTarget": "scene6",
+  "falseTarget": "scene5"
+}
+
+//action 中的 type（场景内执行的动作类型）
+{
+  "type": "text",       // 显示文本
+  "content": "..."
+},
+{
+  "type": "options",    // 显示选项分支
+  "options": [...]
+},
+{
+  "type": "delay",      // 延迟执行
+  "duration": 1500
+},
+{
+  "type": "ending",     // 游戏结局
+  "name": "...",
+  "description": "..."
+}
