@@ -41,7 +41,7 @@
 
 <script>
 export default {
-  props: ['sceneId', 'theme', 'manager', 'typingSpeed'], // <-- 新增 typingSpeed prop
+  props: ['sceneId', 'theme', 'manager', 'typingSpeed'],
   data() {
     return {
       currentActionIndex: 0,
@@ -58,12 +58,10 @@ export default {
     },
   },
   mounted() {
-    // 确保 manager 已经通过 props 传入
     if (this.manager) {
       this.loadScene(this.sceneId);
     } else {
       console.error("GameScreen: SceneManager prop is missing or null.");
-      // 显示错误信息给用户
       this.messages.push({ content: "游戏加载失败，请返回开始界面并确保数据已选择。", type: 'text' });
       this.currentAction = { type: 'ending', name: '加载错误', description: '无法初始化游戏场景管理器。' };
     }
@@ -74,6 +72,7 @@ export default {
       this.currentActions = scene.actions;
       this.currentActionIndex = 0;
       this.typingText = '';
+      
       this.nextAction();
     },
     nextAction() {
@@ -100,7 +99,47 @@ export default {
           this.nextAction();
         }, action.duration || 1000);
       } else if (action.type === 'options' || action.type === 'ending') {
-        // 等待用户选择或显示结局
+        // 等待用户选择或显示结局，不需要立即处理下一个 action
+      } else if (action.type === 'jump') { // 处理 'jump' action
+        if (action.targetSceneId) {
+          this.loadScene(action.targetSceneId); // 直接跳转到目标场景
+          // loadScene 会重置场景并开始处理新的 actions，因此这里无需再递增 currentActionIndex 或调用 nextAction
+        } else {
+          console.error("Jump action missing targetSceneId:", action);
+          this.currentActionIndex++; // 如果跳转无效，则继续下一个 action
+          this.nextAction();
+        }
+        return; // 停止当前场景的后续 action 处理
+      } else if (action.type === 'conditiontext') { // 处理 'conditiontext' action
+        if (this.manager && action.condition) {
+          // 使用 SceneManager 来评估条件
+          if (this.manager.evaluateCondition(action.condition)) {
+            // 如果条件为真，则显示文本内容
+            this.typingText = '';
+            this.isTyping = true;
+            if (action.content) {
+                this.typeOut(action.content, () => {
+                    this.isTyping = false;
+                    this.scrollToBottom();
+                    this.currentActionIndex++;
+                    this.nextAction();
+                });
+            } else {
+                // 如果没有内容，则直接跳过打字效果，处理下一个 action
+                this.isTyping = false;
+                this.currentActionIndex++;
+                this.nextAction();
+            }
+          } else {
+            // 如果条件为假，则跳过内容显示，直接处理下一个 action
+            this.currentActionIndex++;
+            this.nextAction();
+          }
+        } else {
+          console.error("Conditiontext action missing manager or condition:", action);
+          this.currentActionIndex++; // 如果条件文本无效，则继续下一个 action
+          this.nextAction();
+        }
       }
     },
     typeOut(text, done) {
@@ -122,7 +161,7 @@ export default {
           clearInterval(interval);
           done();
         }
-      }, this.typingSpeed); // <-- 使用 this.typingSpeed prop
+      }, this.typingSpeed);
     },
     handleOption(opt) {
       this.messages.push({ content: `→ 你选择了：${opt.text}`, type: 'choice' });
@@ -151,125 +190,6 @@ export default {
 <style scoped>
 @import "../assets/style.css";
 
-.container {
-  max-width: 600px;
-  margin: 20px auto;
-  padding: 48px 24px;
-  /* background: #ffffff; */
-  border-radius: 24px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
-  text-align: center;
-  transition: all 0.3s ease;
-  /* overflow-y: auto;
-  height: 100vh;
-  box-sizing: border-box; */
-}
-
-.message-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
-  overflow-y: auto;
-}
-
-.message {
-  padding: 8px 16px;
-  border-radius: 12px;
-  font-size: 16px;
-  transition: background 0.3s ease;
-  word-break: break-word;
-  text-align: left;
-  line-height: 1.7;
-}
-
-.message-text {
-  background-color: #ffffff;
-  color: #1c1c1e;
-}
-
-.message-choice {
-  background-color: #f2f2f7;
-  color: #8e8e93;
-  font-style: italic;
-  font-size: 14px;
-  text-align: right;
-}
-
-.dark .message-text {
-  background-color: #1c1c1e;
-  color: #f2f2f7;
-}
-
-.dark .message-choice {
-  background-color: #2c2c2e;
-  color: #c7c7cc;
-}
-
-.typing {
-  padding: 12px 16px;
-  border-radius: 12px;
-  background-color: #e5f0ff;
-  color: #007aff;
-  animation: pulse 1.5s infinite;
-}
-
-.dark .typing {
-  background-color: #0a84ff;
-  color: white;
-}
-
-.choices {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.choice-btn {
-  background-color: #007aff;
-  color: white;
-  padding: 10px;
-  border-radius: 12px;
-  font-size: 16px;
-  border: none;
-  cursor: pointer;
-}
-
-.choice-btn:hover {
-  background-color: #005fce;
-}
-
-.ending {
-  margin-top: 48px;
-  text-align: center;
-}
-
-.ending-title {
-  font-size: 24px;
-  font-weight: 600;
-  margin-bottom: 12px;
-}
-
-.ending-desc {
-  font-size: 16px;
-  color: #6e6e73;
-}
-
-.return-btn {
-  margin-top: 24px;
-  background-color: #3a3a3c;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 12px;
-  font-size: 16px;
-  border: none;
-  cursor: pointer;
-}
-
-.return-btn:hover {
-  background-color: #2c2c2e;
-}
 
 @keyframes pulse {
   0% { opacity: 1; }
