@@ -1,24 +1,7 @@
-# interactive_game
+#  互动小说小游戏 ｜Interactive Novel
 
-## Project setup
-```
-npm install
-```
+这是一个基于Vue框架开发的**互动小说小游戏**，作为《无法逃离的星期八》系列的衍生作品，延续了原作中「时空循环」与「自我救赎」的核心主题。目前作品较为粗糙，仍有待完善。
 
-### Compiles and hot-reloads for development
-```
-npm run serve
-```
+[立即体验游戏](https://excharlie.github.io/interactive_game/)  
+[了解原作《无法逃离的星期八》](https://excharlie.github.io/UnescapableOctoday/)
 
-### Compiles and minifies for production
-```
-npm run build
-```
-
-### Lints and fixes files
-```
-npm run lint
-```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).
